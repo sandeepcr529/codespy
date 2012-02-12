@@ -63,6 +63,7 @@ test_cases.php should look like,
 
 
 After the script terminates, the codespy destructor will write the output to the standard output or files. If output format is html, just open the generated html files in a browser to see code coverage.
+You can just download all the three files in to a directory, change the output dir in the test.pho  and just run it to see its working. The html files should be written to the set output directry. Just open the file in browser to see code coverage.
 
 
 
