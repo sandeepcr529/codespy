@@ -12,13 +12,13 @@ The output of codespy can be of 4 types.
 
 Supported formats, html,vim,php and text
 
-* **html** : writes html files, one for each analyzed file. 
+* **html** : writes html files, one for each analyzed file.**IMPORTANT** : Output directory must be set using  **\codespy\Analyzer::$outputdir**. 
 
 The html file will contain the sourcecode with executed lines highlighted in red. The number of time a line of code was executed will be displayed beside the line number. See the screenshot below.
 
 ![Screenshot](http://i44.tinypic.com/4k76lx.png)
 
-Output directory must be set using  \codespy\Analyzer::$outputdir. 
+
 
 File extension .cc.html will be appended to filenames when writing into output directory.
 
@@ -63,4 +63,8 @@ test_cases.php should look like,
 
 
 After the script terminates, the codespy destructor will write the output to the standard output or files. If output format is html, just open the generated html files in a browser to see code coverage.
+
+
+
+ 
 
