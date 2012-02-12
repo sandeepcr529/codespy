@@ -1,3 +1,4 @@
+
 ## Codespy: A code coverage analyzing tool in pure php.
 
 Code coverage analysis means finding out which lines in a source code are actually getting executed. This is important because when writing unit tests, one should know how much code the tests are covering.
@@ -6,7 +7,29 @@ Existing code coverage analyzing tools depends on xdebug functions to do the cod
 
 **Usage:**
 
-Codespy can work only with included files. So you will have to include the target source file in the test-cases file. So we will need a minimum of three files for using codespy which are,
+Codespy can work only with included files. So you will have to include the target source file in the test-cases file. 
+The output of codespy can be of 4 types.
+
+Supported formats, html,vim,php and text
+
+* **html** : writes html files, one for each analyzed file. 
+
+The html file will contain the sourcecode with executed lines highlighted in red. The number of time a line of code was executed will be displayed beside the line number. See the screenshot below.
+
+![Screenshot](http://i44.tinypic.com/4k76lx.png)
+
+Output directory must be set using  \codespy\Analyzer::$outputdir. 
+
+File extension .cc.html will be appended to filenames when writing into output directory.
+
+* **vim** :  outputs vim command for each of the files that can be used to highlight the executed lines in a vim window displaying the respective source file.
+
+* **php** : outputs a 2 dimensional array in php format with lines executed for each of analyzed file.
+
+* **text** : outputs the executed lines for each analyzed file
+
+
+For trying codespy, you will need minimum of three files, which are
 
 **codespy.php** 
 
@@ -39,5 +62,5 @@ test_cases.php should look like,
     //Codespys destructor will write output to stdout or files after the script terminates.
 
 
+After the script terminates, the codespy destructor will write the output to the standard output or files. If output format is html, just open the generated html files in a browser to see code coverage.
 
- 
