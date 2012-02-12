@@ -250,21 +250,26 @@ class analyzer
 		if(self::$outputformat == 'vim') {
 			foreach(self::$coveredlines as $file=>$lines) {
 				//echo PHP_EOL.$file,' :  ',join(',',array_keys($lines));
+				$lines = array_filter($lines,function($x) { return $x>0;});
 				echo PHP_EOL.$file,PHP_EOL,'match cursorline /\%',join('l\|\%',array_keys($lines))."l/";
 			}
 		} elseif(self::$outputformat == 'php') {
 			echo var_export(self::$coveredlines,true);
+			echo "Code Coverage percentage=".($covered_lines/count($file_lines))*100;
 		} elseif(self::$outputformat =='html') {
 			stream_wrapper_restore('file');
 			foreach(self::$coveredlines as $file=>$lines) {
 				$file_lines = file($file);
 				$output = '';
 				$maxlen = strlen(count($file_lines).max(self::$coveredlines[$file])) +1;
+				$covered_lines=0;
 				foreach($file_lines as $k=>$line) 
-					if(isset($lines[$k+1]) && $lines[$k+1]>0) 
+					if(isset($lines[$k+1]) && $lines[$k+1]>0) {
 						$output .= "<span  style='font-family:monospace;background-color:#a0ffa0'>".str_pad(($k+1).':'.$lines[$k+1],$maxlen,'0',STR_PAD_LEFT)."</span><pre style='display:inline;margin:0px;background-color:#ffc2c2;font-family:monospace'>".rtrim(htmlentities($line))."</pre><br/>";
-					else
+						$covered_lines+=1;
+					} else
 						$output .=  "<span style='font-family:monospace;background-color:#a0ffa0'>".str_pad($k+1,$maxlen,'0',STR_PAD_LEFT)."</span><pre style='margin:0px;display:inline'>".rtrim(htmlentities($line))."</pre><br/>";
+				$output .= "<b>Code Coverage percentage</b>=".($covered_lines/count($file_lines))*100;
 				if(self::$outputdir) {
 					file_put_contents(self::$outputdir."/".basename($file).".cc.html",$output);
 				}
@@ -272,7 +277,10 @@ class analyzer
 		
 		} else {
 			foreach(self::$coveredlines as $file=>$lines) {
+				$total_lines = count($lines);
+				$lines = array_filter($lines,function($x) { return $x>0;});
 				echo PHP_EOL.$file,' :  ',PHP_EOL,join(',',array_keys($lines)).PHP_EOL;
+				echo PHP_EOL."Code Coverage percentage=".((count($lines)/$total_lines)*100).PHP_EOL;
 			}
 		}
 	}

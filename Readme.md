@@ -29,6 +29,9 @@ File extension .cc.html will be appended to filenames when writing into output d
 * **text** : outputs the executed lines for each analyzed file
 
 
+For text and html output, the net code coverage in percentage shown at end of output for each file.
+
+
 For trying codespy, you will need minimum of three files, which are
 
 **codespy.php** 
