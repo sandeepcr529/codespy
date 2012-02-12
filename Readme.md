@@ -14,7 +14,7 @@ Supported formats, html,vim,php and text
 
 * **html** : writes html files, one for each analyzed file.**IMPORTANT** : Output directory must be set using  **\codespy\Analyzer::$outputdir**. 
 
-The html file will contain the sourcecode with executed lines highlighted in red. The number of time a line of code was executed will be displayed beside the line number. See the screenshot below.
+The html file will contain the sourcecode with executed lines highlighted in red. The number of times a line of code was executed will be displayed beside the line number. See the screenshot below.
 
 ![Screenshot](http://i44.tinypic.com/4k76lx.png)
 
