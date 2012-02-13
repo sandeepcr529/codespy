@@ -121,7 +121,7 @@ class str_wrp
 		stream_wrapper_restore('file');
         $result = @stat($path);
 		stream_wrapper_unregister("file");
-		stream_wrapper_register("file", 'str_wrp');
+		stream_wrapper_register("file", '\codespy\str_wrp');
         return $result;
     }
   
