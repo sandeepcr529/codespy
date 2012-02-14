@@ -245,6 +245,7 @@ class analyzer
 	public static $coveredlines = array();
 	public static $outputformat = 'txt';
 	public static $outputdir = '';
+    public static $coveredcolor = '#ffc2c2';
 	public function __destruct()
 	{
 		if(self::$outputformat == 'vim') {
@@ -265,7 +266,7 @@ class analyzer
 				$covered_lines=0;
 				foreach($file_lines as $k=>$line) 
 					if(isset($lines[$k+1]) && $lines[$k+1]>0) {
-						$output .= "<span  style='font-family:monospace;background-color:#a0ffa0'>".str_pad(($k+1).':'.$lines[$k+1],$maxlen,'0',STR_PAD_LEFT)."</span><pre style='display:inline;margin:0px;background-color:#ffc2c2;font-family:monospace'>".rtrim(htmlentities($line))."</pre><br/>";
+						$output .= "<span  style='font-family:monospace;background-color:#a0ffa0'>".str_pad(($k+1).':'.$lines[$k+1],$maxlen,'0',STR_PAD_LEFT)."</span><pre style='display:inline;margin:0px;background-color:" . self::$coveredcolor . ";font-family:monospace'>".rtrim(htmlentities($line))."</pre><br/>";
 						$covered_lines+=1;
 					} else
 						$output .=  "<span style='font-family:monospace;background-color:#a0ffa0'>".str_pad($k+1,$maxlen,'0',STR_PAD_LEFT)."</span><pre style='margin:0px;display:inline'>".rtrim(htmlentities($line))."</pre><br/>";
