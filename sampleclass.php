@@ -8,8 +8,12 @@ public function factorial($x)
 		return "Result too large";
 	elseif($x>1)
 		return $x*$this->factorial($x-1);
-	else
+	elseif($x==1)
 		return 1;
+	else
+		throw new Exception("test");
 	}
 
 }
+
+

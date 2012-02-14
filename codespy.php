@@ -451,7 +451,31 @@ class analyzer
 						if( $next_non_comment != 'T_ELSE' &&   $next_non_comment != 'T_ELSEIF'  ) $patch .= ';';
 						$v[1] = '';
 						break;
-					
+					case 'T_THROW':
+						$return_exp = '';
+						$temp = false;
+						while(isset($tokens[$k]) && ($scan_token = $tokens[++$k]) !== ';')  
+						{
+						if(is_array($scan_token) )  {
+							$return_exp .= $scan_token[1];
+							if(token_name($scan_token[0]) != 'T_WHITESPACE') $temp = true;
+						} else {
+							$return_exp .= $scan_token;
+							$temp = true;
+						}
+
+						}
+						if($temp)  {
+						$patch .= "{\\codespy\\Analyzer::\$coveredlines[__FILE__][__LINE__]+=1;throw $return_exp;}";
+						if($capture_input) $patched_capture .=" $return_exp;";
+						} else {
+							$patch.="{\\codespy\\Analyzer::\$coveredlines[__FILE__][__LINE__]+=1;return;}";
+							$patched_capture .=" ; ";
+						}
+						$next_non_comment = self::get_next_non_comment($tokens,$k+1);
+						if( $next_non_comment != 'T_ELSE' &&   $next_non_comment != 'T_ELSEIF'  ) $patch .= ';';
+						$v[1] = '';
+						break;
 					case 'T_DOLLAR_OPEN_CURLY_BRACES':
 						case 'T_STRING_VARNAME';
 						case 'T_CURLY_OPEN';
@@ -496,8 +520,14 @@ class analyzer
 		}
 		return false;
 	}
+	public function exception_handler($e)
+	{
+		$this->__destruct();
+		throw $e;
+	}
 	
 }
 stream_wrapper_unregister("file");
 stream_wrapper_register("file", "codespy\str_wrp");
 $_codecoverage_object_to_call_upon_exit = new analyzer;
+set_exception_handler(array($_codecoverage_object_to_call_upon_exit,'exception_handler'));
