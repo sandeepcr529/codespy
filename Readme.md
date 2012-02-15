@@ -1,5 +1,4 @@
-
-## Codespy: A code coverage analyzing tool in pure php.
+## Codespy: A code coverage analyzing tool in pure php. 
 
 Code coverage analysis means finding out which lines in a source code are actually getting executed. This is important because when writing unit tests, one should know how much code the tests are covering.
 
@@ -66,9 +65,15 @@ test_cases.php should look like,
 
 
 After the script terminates, the codespy destructor will write the output to the standard output or files. If output format is html, just open the generated html files in a browser to see code coverage.
-You can just download all the three files in to a directory, change the output dir in the test.php  and just run it to see its working. The html files should be written to the set output directry. Just open the file in browser to see code coverage.
 
+### The addFileToSpy Function.
+This is a useful function that can limit the code analysis to a set of specified files. This can be useful if a project contains a large number of php files, but at time we are only interested in analyzing coverage of a particular file. 
 
+A function can be added for analysis as
 
- 
+    \codespy\Analyzer::addFileToSpy("/path/to/target/file");
+
+By restricting analysis to a single file or a small number of files, the test can be run without much reduction in speed.
+
+For testing, you can just download all the three files in to a directory, change the output dir in the test.php  and just run it to see its working. The html files should be written to the set output directory. Just open the file in browser to see code coverage.
 
