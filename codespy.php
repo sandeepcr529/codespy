@@ -245,7 +245,6 @@ class analyzer
 	public static $coveredlines = array();
 	public static $outputformat = 'txt';
 	public static $outputdir = '';
-    public static $coveredcolor = '#ffc2c2';
 	public function __destruct()
 	{
 		if(self::$outputformat == 'vim') {
@@ -266,7 +265,7 @@ class analyzer
 				$covered_lines=0;
 				foreach($file_lines as $k=>$line) 
 					if(isset($lines[$k+1]) && $lines[$k+1]>0) {
-						$output .= "<span  style='font-family:monospace;background-color:#a0ffa0'>".str_pad(($k+1).':'.$lines[$k+1],$maxlen,'0',STR_PAD_LEFT)."</span><pre style='display:inline;margin:0px;background-color:" . self::$coveredcolor . ";font-family:monospace'>".rtrim(htmlentities($line))."</pre><br/>";
+						$output .= "<span  style='font-family:monospace;background-color:#a0ffa0'>".str_pad(($k+1).':'.$lines[$k+1],$maxlen,'0',STR_PAD_LEFT)."</span><pre style='display:inline;margin:0px;background-color:#ffc2c2;font-family:monospace'>".rtrim(htmlentities($line))."</pre><br/>";
 						$covered_lines+=1;
 					} else
 						$output .=  "<span style='font-family:monospace;background-color:#a0ffa0'>".str_pad($k+1,$maxlen,'0',STR_PAD_LEFT)."</span><pre style='margin:0px;display:inline'>".rtrim(htmlentities($line))."</pre><br/>";
@@ -323,7 +322,7 @@ class analyzer
 		$nested_function_stack = array();
 		$parethesis_stack = array();
 		$curlybraseadded = 0;
-		$inparenthisis = false;
+		$here_doc_end = $inparenthisis = false;
 		for($k = 0 ; $k<$token_count ; $k++) {
 			$v = $tokens[$k];
 			if(is_string($v)) {
@@ -359,37 +358,25 @@ class analyzer
 						}
 						else if($context != 'class' && $next_non_comment != 'T_ELSE' &&  $next_non_comment != 'T_ELSEIF' ) {
 							$patch .= ';';
-							if(!$inparenthisis && $capture_input)  $patch .= '\codespy\Analyzer::$coveredlines[__FILE__][__LINE__]+=1;';
+							if(!$inparenthisis && end($stack) !='class' ) {
+								if(!$here_doc_end) {
+									$patch .= '\codespy\Analyzer::$coveredlines[__FILE__][__LINE__]+=1;'; 
+								} else {
+									$patch .= (PHP_EOL. '\codespy\Analyzer::$coveredlines[__FILE__][__LINE__ - 1]+=1;'); 
+								}
+							}
 						} else {
 							$patch .= ';';
 						}
 				} elseif($v == '{') {
-					array_push($stack,$context);
+					if($context) {
+						array_push($stack,$context);
+						$context = '';
+					} else array_push($stack,'{');
 					$patch .= $v;
-				} elseif($v == '}' && 0) {
+				} elseif($v == '}') {
 					$stack_top = array_pop($stack);
-					if($stack_top == 'function' && (array_search('function',$stack)===false)) {
-						$capture_input = false;
-						$function_fragments[$last_function] = $patched_capture;
-						$patch .= "{if(isset(\$____profiler)) \profiler::close(\$____profiler);} }";
-					} elseif($stack_top == 'class') {
-						foreach($function_fragments as $kk=>$vv) {
-							$vv = ltrim($vv);
-							if(substr($vv,0,1)=='&') {
-								$vv = ltrim($vv,'& ');
-								$patch .= "\n function & trace_patch_$vv ";
-							} else {
-								$patch .= "\n function  trace_patch_$vv ";
-
-							}
-						}
-						$patch .=  $v;
-						$function_fragments = array();
-						$patched_capture = '';
-					} else {
-						$patch .= $v;
-					}
-					$context = '';
+					$patch .= $v;
 				} else $patch .= $v;
 			}else {
 				if($capture_input) {
@@ -430,8 +417,7 @@ class analyzer
 					case 'T_RETURN':
 						$return_exp = '';
 						$temp = false;
-						while(isset($tokens[$k]) && ($scan_token = $tokens[++$k]) !== ';')  
-						{
+						while(isset($tokens[$k]) && ($scan_token = $tokens[++$k]) !== ';')  {
 						if(is_array($scan_token) )  {
 							$return_exp .= $scan_token[1];
 							if(token_name($scan_token[0]) != 'T_WHITESPACE') $temp = true;
@@ -481,6 +467,11 @@ class analyzer
 						case 'T_STRING_VARNAME';
 						case 'T_CURLY_OPEN';
 						array_push($stack,$context);
+						break;
+					case T_WHITESPACE:
+						$here_doc_end = false;
+					case 'T_END_HEREDOC':
+						$here_doc_end = true;
 						break;
 				
 				}
