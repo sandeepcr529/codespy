@@ -69,7 +69,7 @@ After the script terminates, the codespy destructor will write the output to the
 ### The addFileToSpy Function.
 This is a useful function that can limit the code analysis to a set of specified files. This can be useful if a project contains a large number of php files, but at time we are only interested in analyzing coverage of a particular file. 
 
-A function can be added for analysis as
+A file can be added for analysis as
 	
 	include 'codespy.php';
     \codespy\Analyzer::addFileToSpy("/path/to/target/file");
