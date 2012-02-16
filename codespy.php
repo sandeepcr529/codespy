@@ -324,6 +324,7 @@ class analyzer
 		$parethesis_stack = array();
 		$curlybraseadded = 0;
 		$here_doc_end = $inparenthisis = false;
+		$offsetline = 0;
 		for($k = 0 ; $k<$token_count ; $k++) {
 			$v = $tokens[$k];
 			if(is_string($v)) {
@@ -361,10 +362,12 @@ class analyzer
 							$patch .= ';';
 							if(!$inparenthisis && end($stack) !='class' ) {
 								if(!$here_doc_end) {
-									$patch .= '\codespy\Analyzer::$coveredlines[__FILE__][__LINE__]+=1;'; 
+									$patch .= '\codespy\Analyzer::$coveredlines[__FILE__][__LINE__-'.$offsetline.']+=1;'; 
 								} else {
-									$patch .= (PHP_EOL. '\codespy\Analyzer::$coveredlines[__FILE__][__LINE__ - 1]+=1;'); 
+									$patch .= (PHP_EOL. '\codespy\Analyzer::$coveredlines[__FILE__][__LINE__ - 1-'.$offsetline.']+=1;'); 
+									$offsetline++;
 								}
+								$here_doc_end = false;
 							}
 						} else {
 							$patch .= ';';
@@ -403,6 +406,7 @@ class analyzer
 					case 'T_CLASS':
 					case 'T_INTERFACE':
 					case 'T_TRAIT':
+					case 'T_USE':
 						$context = 'class';
 						$last_class = self::get_next_non_comment($tokens,$k+1,true);
 						break;
@@ -430,10 +434,10 @@ class analyzer
 
 						}
 						if($temp)  {
-						$patch .= "{\\codespy\\Analyzer::\$coveredlines[__FILE__][__LINE__]+=1;return $return_exp;}";
+						$patch .= "{\\codespy\\Analyzer::\$coveredlines[__FILE__][__LINE__-'.$offsetline.']+=1;return $return_exp;}";
 						if($capture_input) $patched_capture .=" $return_exp;";
 						} else {
-							$patch.="{\\codespy\\Analyzer::\$coveredlines[__FILE__][__LINE__]+=1;return;}";
+							$patch.="{\\codespy\\Analyzer::\$coveredlines[__FILE__][__LINE__-'.$offsetline.']+=1;return;}";
 							$patched_capture .=" ; ";
 						}
 						$next_non_comment = self::get_next_non_comment($tokens,$k+1);
@@ -455,10 +459,10 @@ class analyzer
 
 						}
 						if($temp)  {
-						$patch .= "{\\codespy\\Analyzer::\$coveredlines[__FILE__][__LINE__]+=1;throw $return_exp;}";
+						$patch .= "{\\codespy\\Analyzer::\$coveredlines[__FILE__][__LINE__-'.$offsetline.']+=1;throw $return_exp;}";
 						if($capture_input) $patched_capture .=" $return_exp;";
 						} else {
-							$patch.="{\\codespy\\Analyzer::\$coveredlines[__FILE__][__LINE__]+=1;return;}";
+							$patch.="{\\codespy\\Analyzer::\$coveredlines[__FILE__][__LINE__-'.$offsetline.']+=1;return;}";
 							$patched_capture .=" ; ";
 						}
 						$next_non_comment = self::get_next_non_comment($tokens,$k+1);
@@ -482,6 +486,7 @@ class analyzer
 		}
 		//$patch = substr($patch,6);
 		//if($last_class) file_put_contents("temp_$last_class.php",$patch);
+		echo $patch;
 
 		return ($patch);
 	}
