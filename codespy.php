@@ -486,7 +486,6 @@ class analyzer
 		}
 		//$patch = substr($patch,6);
 		//if($last_class) file_put_contents("temp_$last_class.php",$patch);
-		echo $patch;
 
 		return ($patch);
 	}
