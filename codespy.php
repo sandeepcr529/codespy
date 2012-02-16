@@ -1,4 +1,5 @@
 <?php
+// Codespy PHP code coverage analyzing tool version 1.0
 namespace codespy;
 /*
 
@@ -401,6 +402,7 @@ class analyzer
 						break;
 					case 'T_CLASS':
 					case 'T_INTERFACE':
+					case 'T_TRAIT':
 						$context = 'class';
 						$last_class = self::get_next_non_comment($tokens,$k+1,true);
 						break;
