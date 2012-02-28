@@ -14,7 +14,7 @@ Existing code coverage analyzing tools depends on xdebug functions to do the cod
 **How to do path coverage analysis:**
 
 * Download codespy.php.
-* Include it in your project and add the functions to be analyzed for path coverage by calling function '_addFunctionToAnalyze_' **BEFORE** any of your files gets included. 
+* Include it in your project and add the functions to be analyzed for path coverage by calling function '_addFunctionToAnalyze_' **BEFORE** any of your files gets included. Please view the included test.php file to see how to use the function '_addFunctionToAnalyze_'.  
 * Specify the output directory for codespy's html output files. Directory must be script writable.
 * Execute your tests/ code via command line or from a browser.
 * Codespy's destructor method will write the collected data to the output directory at the end of execution.
