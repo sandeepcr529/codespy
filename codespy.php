@@ -284,7 +284,7 @@ class analyzer
 							$output .= "<div style='overflow:auto;width:400px;height:200px;'>";
 							foreach($branches as $b) $output .= join(',',$b)."\n<br/>";
 							$output .= "</div>";
-							$output .= "\n<br/>Paths covered:".($cp = count(self::$executionbranches[$file][$class][$file_1]))."\n\n<br/><br/>";
+							$output .= "\n<br/>Paths covered:".($cp = count($highlightpaths = array_unique($highlightpaths)))."\n\n<br/><br/>";
 							$output .= "Covered Paths:\n<br/>";
 							foreach($highlightpaths as $path) {  $output .= ($path."\n<br/>");}
 							$output .= "\n<br/>";
@@ -681,7 +681,11 @@ class patcher
 		$last_class = '';
 		while($tp < $token_count) {
 			$token_name = $this->token_name($tokens[$tp]);
-			if($token_name == 'T_CLASS') $last_class = $this->token_content($tokens[$this->get_next_non_comment($tokens,$tp+1)]);
+			if($token_name == 'T_NAMESPACE') $current_namespace =  $this->token_content($tokens[$this->get_next_non_comment($tokens,$tp+1)]);
+			if($token_name == 'T_CLASS') {
+			$last_class = $this->token_content($tokens[$this->get_next_non_comment($tokens,$tp+1)]);
+			if(isset($current_namespace)) $last_class = $current_namespace."\\".$last_class;
+			}
 			if(in_array($token_name, $tokens_to_patch )) {
 				if($blockstart = $this->search_token($tokens,$tp,'{',array(';'))) {
 					 $function_name_tp = $this->get_next_non_comment($tokens,$tp+1);
@@ -716,7 +720,11 @@ class patcher
 		$last_class = '';
 		while($tp < $token_count) {
 			$token_name = $this->token_name($tokens[$tp]);
-			if($token_name == 'T_CLASS') $last_class = $this->token_content($tokens[$this->get_next_non_comment($tokens,$tp+1)]);
+			if($token_name == 'T_NAMESPACE') $current_namespace =  $this->token_content($tokens[$this->get_next_non_comment($tokens,$tp+1)]);
+			if($token_name == 'T_CLASS') {
+			$last_class = $this->token_content($tokens[$this->get_next_non_comment($tokens,$tp+1)]);
+			if(isset($current_namespace)) $last_class = $current_namespace."\\".$last_class;
+			}
 			if(in_array($token_name, $tokens_to_patch )) {
 				if($blockstart = $this->search_token($tokens,$tp,'{',array(';'))) {
 					 $function_name_tp = $this->get_next_non_comment($tokens,$tp+1);
