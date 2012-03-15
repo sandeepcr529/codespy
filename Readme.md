@@ -65,6 +65,11 @@ to some script writable directory in your system.
 Codespy can work only with included files. So you will have to include the target source file in the test-cases file. 
 The output of codespy can be of 4 types.
 
+Codecoverage output produces two metrics.
+
+* 1.Line coverage, which measures the number of executed lines/ total no of lines in that file.
+* 2.Statement Coverage, which measures the number of statements covered/ total no of statements
+
 Supported formats, html,vim,php and text
 
 * **html** : writes html files, one for each analyzed file.**IMPORTANT** : Output directory must be set using  **\codespy\Analyzer::$outputdir**. 
@@ -76,6 +81,10 @@ The html file will contain the source code with executed lines highlighted in re
 
 
 File extension .cc.html will be appended to filenames when writing into output directory.
+
+Now an index.html file will be generated with a summary of code coverage and statement coverage of all files and links to the coverage view of each files.
+
+![Screenshot](http://i42.tinypic.com/bhkbc1.jpg)
 
 * **vim** :  outputs vim command for each of the files that can be used to highlight the executed lines in a vim window displaying the respective source file.
 
@@ -135,4 +144,5 @@ This function should be called right after you include codespy.php.
 By restricting analysis to a single file or a small number of files, the test can be run without much reduction in speed.
 
 For testing, you can just download all the three files in to a directory, change the output dir in the test.php  and just run it to see its working. The html files should be written to the set output directory. Just open the file in browser to see code coverage.
+
 
