@@ -336,7 +336,8 @@ EOB;
 				$actual_coverage = ($covered_lines*100/Analyzer::$executable_statements[$file]);
 				$coverages[$file] = $coverage;
 				$actual_coverages[$file] = $actual_coverage;
-				$output = "<b>Code Coverage percentage</b>=".$coverage."<br/>".$output;
+				$output = "<b>~Line Coverage</b>=".$coverage."%<br/>".$output;
+				$output = "<b>~Statement Coverage</b>=".$actual_coverage."%<br/>".$output;
 				if(self::$outputdir) {
 					file_put_contents(self::$outputdir."/".($visual_report_file[$file] = preg_replace("/[:\\/\\\]/",'-',$file).".cc.html"),$style.$output);
 				}
