@@ -240,6 +240,7 @@ class str_wrp
 class analyzer
 {
 	public static $coveredlines = array();
+	public static $executable_statements = array();
 	public static $executionbranches = array();
 	public static $instancenumberfor = array();
 	public static $possiblebranches = array();
@@ -261,6 +262,33 @@ class analyzer
 			echo var_export(self::$coveredlines,true);
 			echo "Code Coverage percentage=".($covered_lines/count($file_lines))*100;
 		} elseif(self::$outputformat =='html') {
+			$style =<<<EOB
+			<!DOCTYPE html>
+			<style>
+			body{
+			font: 14px/1.428 "Lucida Grande","Lucida Sans Unicode",Lucida,Arial,Helvetica,sans-serif;
+			}
+			table.index {
+			border-spacing:0px;
+			width:100%;
+			}
+			table.index tr th{
+			border-bottom:solid 1px #d0d0d0;
+			border-left:solid 1px #d0d0d0;
+			color:gray;
+			text-align:left;
+			padding:3px;
+			}
+
+			table.index tr td{
+			padding:3px;
+			}
+			table.index tr.odd td{
+			padding:3px;
+			background-color:#e5e5e5;
+			}
+			</style>
+EOB;
 			stream_wrapper_restore('file');
 			foreach(self::$coveredlines as $file=>$lines) {
 				if(self::shouldpatchfile($file)) {
@@ -300,15 +328,29 @@ class analyzer
 				//foreach(self::$executionbranches as $functionname=>$paths) {$output .=$functionname."<br/>"; foreach($paths as $path)  $output .= join(',',array_keys($path))."\n<br/>";}
 				foreach($file_lines as $k=>$line) 
 					if(isset($lines[$k+1]) && $lines[$k+1]>0) {
-						$output .= "<span  style='font-family:monospace;background-color:#a0ffa0'>".str_pad(($k+1).':'.$lines[$k+1],$maxlen,'0',STR_PAD_LEFT)."</span><pre style='display:inline;margin:0px;background-color:".self::$coveredcolor.";font-family:monospace'>".rtrim(preg_replace('/\(codespy-execution-node:([0-9]+)\)/','<span style=\'color:red;font-weight:bold;font-size:22;padding:10px;\'>\1</span>', htmlentities($line)))."</pre><br/>";
+						$output .= "<span  style='font-family:monospace;background-color:#a0ffa0'>".str_pad(($k+1).':'.$lines[$k+1],$maxlen,'0',STR_PAD_LEFT)."</span><pre style='font-family:monospace;display:inline;margin:0px;background-color:".self::$coveredcolor.";font-family:monospace'>".rtrim(preg_replace('/\(codespy-execution-node:([0-9.]+)\)/','<span style=\'color:red;font-weight:bold;font-size:22;padding:10px;\'>\1</span>', htmlentities($line)))."</pre><br/>";
 						$covered_lines+=1;
 					} else
-						$output .=  "<span style='font-family:monospace;background-color:#a0ffa0'>".str_pad($k+1,$maxlen,'0',STR_PAD_LEFT)."</span><pre style='margin:0px;display:inline'>".rtrim(preg_replace('/\(codespy-execution-node:([0-9]+)\)/','<span style=\'color:red;font-size:22;font-weight:bold\'>\1</span>',htmlentities($line)))."</pre><br/>";
-				$output .= "<b>Code Coverage percentage</b>=".($covered_lines/count($file_lines))*100;
+						$output .=  "<span style='font-family:monospace;background-color:#a0ffa0'>".str_pad($k+1,$maxlen,'0',STR_PAD_LEFT)."</span><pre style='font-family:monospace;margin:0px;display:inline'>".rtrim(preg_replace('/\(codespy-execution-node:([0-9.]+)\)/','<span style=\'color:red;font-size:22;font-weight:bold\'>\1</span>',htmlentities($line)))."</pre><br/>";
+				$coverage = ($covered_lines/count($file_lines))*100;
+				$actual_coverage = ($covered_lines*100/Analyzer::$executable_statements[$file]);
+				$coverages[$file] = $coverage;
+				$actual_coverages[$file] = $actual_coverage;
+				$output = "<b>Code Coverage percentage</b>=".$coverage."<br/>".$output;
 				if(self::$outputdir) {
-					file_put_contents(self::$outputdir."/".basename($file).".cc.html",$output);
+					file_put_contents(self::$outputdir."/".($visual_report_file[$file] = preg_replace("/[:\\/\\\]/",'-',$file).".cc.html"),$style.$output);
 				}
 			}
+			ob_start();
+			echo "$style<table class='index'><tr><th>File Name</th><th>Line Coverage</th><th>~Statement Coverage</th><th>View Report</th></tr>";
+			$rc=0;
+			foreach($coverages as $file=>$coverage) {
+				$coverage = number_format($coverage,2);
+				echo "<tr ".(($rc++%2==1)?"class='odd'":"")."><td>$file</td><td>$coverage %</td><td>{$actual_coverages[$file]} %</td><td><a href='{$visual_report_file[$file]}'>View Coverage</a></td></tr>";
+			}
+			echo "</table>";
+			$index_content = ob_get_clean();
+			file_put_contents(self::$outputdir."/index.html",$index_content);
 		
 		} else {
 			foreach(self::$coveredlines as $file=>$lines) {
@@ -608,7 +650,7 @@ class patcher
 		$this->source[$this->current_pass] = $this->change_stuff() ;
 	}
 	// inject trace code in statements
-	public function pass_4()
+	public function pass_4($path = '')
 	{
 		$tokens = token_get_all($this->source[$this->last_pass]);
 		$token_count = count($tokens);
@@ -619,6 +661,7 @@ class patcher
 		$offset = 0;
 		$suspend = true;
 		$inclass = false;
+		$executable_statements = 0;
 		while($tp < $token_count) {
 			$token_name = $this->token_name($tokens[$tp]);
 			if(in_array($token_name, $tokens_to_patch )) {
@@ -661,6 +704,7 @@ class patcher
 					}
 
 				} elseif($token_name == ';') {
+					$executable_statements++;
 					$this->add_tokens_to_be_inserted_after($tp+1,'\codespy\Analyzer::$coveredlines[__FILE__][__LINE__-'.$offset.']+=1;');
 				} elseif($token_name == 'T_RETURN' || $token_name == 'T_THROW' || $token_name == 'T_BREAK' || $token_name == 'T_CONTINUE') {
 					$this->add_tokens_to_be_inserted_after($tp,'\codespy\Analyzer::$coveredlines[__FILE__][__LINE__-'.$offset.']+=1;');
@@ -668,6 +712,8 @@ class patcher
 				}
 			$tp++;
 		}
+		Analyzer::$executable_statements[$path] = $executable_statements;
+
 		$this->source[$this->current_pass] = $this->change_stuff() ;
 		
 	}
@@ -790,6 +836,42 @@ class patcher
 		return $tree;
 
 	}
+	private function get_children_from_boolean($tokens,&$start,$end,$parent_node,$group_node,&$last_node = null,$foroutput=false)
+	{
+		$new_node = $parent_node;
+		$tree = new tree;
+		while($start<=$end) {
+			$token_name = $this->token_name($tokens[$start]);
+			if(in_array($token_name,array('T_BOOLEAN_AND','T_BOOLEAN_OR'))) {
+				$new_node++;
+				$tree->addChild($parent_node,$new_node);
+				$parent_node = $new_node;
+				$this->add_tokens_to_be_inserted_after($start," && (\\codespy\\Analyzer::\$executionbranches[__FILE__][__CLASS__][__FUNCTION__][\\codespy\\Analyzer::\$instancenumberfor[__FILE__][__CLASS__][__FUNCTION__]][$new_node] = 1)",$foroutput?"$new_node":$foroutput);
+				$src_node = $new_node;
+				if($this->token_name($tokens[$start = $this->get_next_non_comment($tokens,$start+1)]) == '('){
+					$group_node = $new_node++;
+					$tree->addChild($src_node,$new_node);
+					$this->add_tokens_to_be_inserted_after($start+1,"(\\codespy\\Analyzer::\$executionbranches[__FILE__][__CLASS__][__FUNCTION__][\\codespy\\Analyzer::\$instancenumberfor[__FILE__][__CLASS__][__FUNCTION__]][$new_node] = 1)&&",$foroutput?($group_node+1):$foroutput);
+					$thisend = $this->get_pair($tokens,$start);
+					$last_node = $new_node;
+					if($node_children = $this->get_children_from_boolean($tokens,$start,$thisend,$new_node,$group_node+1,$last_node,$foroutput)) {
+						$tree->addChildren($node_children);
+					}
+					$parent_node = $new_node = $last_node;
+					$tree->addChildToAllDecendants($src_node,$new_node+1);
+					continue;
+				}
+			}
+			$start++;
+		}
+		$last_node = $new_node;
+		return $tree;
+
+	}
+
+
+
+	
 
 	private function get_children_from_if($tokens,&$start,$parent_node,&$last_node,$foroutput = false)
 	{
@@ -800,30 +882,46 @@ class patcher
 		while(1) {
 			$token_name = $this->token_name($tokens[$this->get_next_non_comment($tokens,$tp)]);
 			if(in_array($token_name,array('T_IF','T_ELSE','T_ELSEIF'))) {
-					if($token_name == 'T_ELSE') { $elsefound = true;
-						$start  = $this->search_token($tokens,$tp,'{',array(';'));
-					} else {
-						$start  = $this->search_token($tokens,$tp,'(',array(';'));
-						$start = $this->get_pair($tokens,$start);
-						$start  = $this->search_token($tokens,$start,'{',array(';'));
+				if($token_name == 'T_ELSE') { $elsefound = true;
+					$start  = $this->search_token($tokens,$tp,'{',array(';'));
+				} else {
+					if($token_name == 'T_IF') {
+						if(isset($found_if)) break;
+						$found_if = true;
 					}
-					$end = $this->get_pair($tokens,$start);
-
-					$new_node = $current_node_id = $current_node_id + 1;
-					if(!in_array($parent_node,array_merge($this->break_nodes , $this->continue_nodes,$this->return_nodes))) $tree->addChild($parent_node,$new_node);
-					$this->add_tokens_to_be_inserted_after($start+1,"/*$new_node*/"."\\codespy\\Analyzer::\$executionbranches[__FILE__][__CLASS__][__FUNCTION__][\\codespy\\Analyzer::\$instancenumberfor[__FILE__][__CLASS__][__FUNCTION__]][$new_node] = 1;",$foroutput?$new_node:false);
-					if($children = $this->get_children_from($tokens,$start,$end,$current_node_id,$current_node_id,$foroutput)) {
-						$tree->addChildren($children);
+					$boolleft = $start  = $this->search_token($tokens,$tp,'(',array(';'));
+					$boolright = $start = $this->get_pair($tokens,$start);
+					$temp_current_node = $current_node_id;
+					$parent_node_old = $parent_node;
+					if( $node_children =$this->get_children_from_boolean($tokens,$boolleft,$boolright,$current_node_id,$current_node_id,$current_node_id,$foroutput) ) {
+						if($temp_current_node != $current_node_id) {
+							$parent_node = $current_node_id;
+							$tree->addChildToAllDecendants($temp_current_node+1,$current_node_id+1);
 						}
-					$tp = $end+1;
-					} else break;
-
-
+						$tree->addChildren($node_children);
 					}
+					$start  = $this->search_token($tokens,$start,'{',array(';'));
+				}
+				$end = $this->get_pair($tokens,$start);
+
+				$new_node = $current_node_id = $current_node_id + 1;
+				if(!in_array($parent_node,array_merge($this->break_nodes , $this->continue_nodes,$this->return_nodes))) {
+					$tree->addChild($parent_node,$new_node);
+				}
+				$this->add_tokens_to_be_inserted_after($start+1,"/*$new_node*/"."\\codespy\\Analyzer::\$executionbranches[__FILE__][__CLASS__][__FUNCTION__][\\codespy\\Analyzer::\$instancenumberfor[__FILE__][__CLASS__][__FUNCTION__]][$new_node] = 1;",$foroutput?$new_node:false);
+				if($children = $this->get_children_from($tokens,$start,$end,$current_node_id,$current_node_id,$foroutput)) {
+					$tree->addChildren($children);
+				}
+				$tp = $end+1;
+			} else break;
+
+
+		}
 		$new_node = $current_node_id+1;
 		if(!isset($elsefound)) {
-			if(!in_array($parent_node,array_merge($this->break_nodes , $this->continue_nodes,$this->return_nodes))) $tree->addChild($parent_node,$new_node);
-		}
+			if(!in_array($parent_node_old,array_merge($this->break_nodes , $this->continue_nodes,$this->return_nodes))) $tree->addChild($parent_node_old,$new_node);
+		} 	
+		echo "Pn = $parent_node_old";
 		$tree->addChildToAllLeavesOfParent($parent_node,$new_node,array_merge($this->break_nodes , $this->continue_nodes,$this->return_nodes));
 		$this->add_tokens_to_be_inserted_after($end+1,"/*$new_node*/"."\\codespy\\Analyzer::\$executionbranches[__FILE__][__CLASS__][__FUNCTION__][\\codespy\\Analyzer::\$instancenumberfor[__FILE__][__CLASS__][__FUNCTION__]][$new_node] = 1;",$foroutput?$new_node:false);
 		$last_node = $new_node;
@@ -903,10 +1001,11 @@ class patcher
 
 	private function  get_children_from($tokens,$start,$end,$parent_node,&$last_node = null,$foroutput=false)
 	{
-		$branch_points = array('T_IF','T_FOR','T_FOREACH','T_WHILE','T_SWITCH','T_DO');
+		$branch_points = array('T_IF','T_FOR','T_FOREACH','T_WHILE','T_SWITCH','T_DO','T_BOOLEAN_OR','T_BOOLEAN_AND');
 		$tp = $start;
 		$tree= new tree;
 		$current_node_id = $parent_node;
+		$this->break_nodes = $this->return_nodes = $this->continue_nodes = array();
 		while($tp<$end) {
 			$token_name = $this->token_name($tokens[$tp]);
 			if($token_name == 'T_FUNCTION') {
@@ -940,15 +1039,29 @@ class patcher
 						if( $node_children = $this->get_children_from_do($tokens,$tp,$current_node_id,$current_node_id,$foroutput))
 						$tree->addChildren($node_children);
 					}
-				 else {
+				elseif(in_array($token_name,array('T_BOOLEAN_AND','T_BOOLEAN_OR')) ) {
+					$boolright = $this->get_right_of_boolean($tokens,$tp);
+					if( $node_children =$this->get_children_from_boolean($tokens,$tp,$boolright,$current_node_id,$current_node_id,$current_node_id,$foroutput)) {
+						$tree->addChildren($node_children);
+					}
+				}
+				else {
 					if( $node_children = $this->get_children_from_loop($tokens,$tp,$current_node_id,$current_node_id,$foroutput))
 					$tree->addChildren($node_children);
 					}
-				}
+				} 
 			$tp++;
 		}
 		$last_node = $current_node_id;
 		return $tree;
+	}
+	public function get_right_of_boolean($tokens,$tp)
+	{
+		if($temp = $this->search_token($tokens,$tp+1,array(':' ,'?', '.' , ';' , ',' ,')','T_CLOSE_TAG','T_BOOLEAN_OR','T_BOOLEAN_AND'),array(),true)) return $this->get_previous_non_comment($tokens,$temp-1);
+	}
+	public function get_left_of_boolean($tokens,$tp)
+	{
+		if($temp = $this->search_back($tokens,$tp-1,array('{','(',';','T_OPEN_TAG',',','?',':','T_BOOLEAN_OR','T_BOOLEAN_AND'),array(),true)) return $this->get_next_non_comment($tokens,$temp+1);
 	}
 
 	public function get_break_level($tokens,$tp)
@@ -972,10 +1085,17 @@ class patcher
 	}
 	return $tp;
 	}
+	public function get_context($tokens,$tp,$offset= 3)
+	{
+	$start = ($tp>$offset) ? $tp-$offset: 0;
+	$end = ($tp+$offset < count($tokens))?$tp+$offset: count($tokens)-1;
+	return $this->get_contents($tokens,$start,$end);
+
+	}
 	public function get_contents($tokens,$start,$end) 
 	{
 	$return = '';
-	for(;$start<$end;$start++) {
+	for(;$start<=$end;$start++) {
 		if(is_array($tokens[$start])) $return .= $tokens[$start][1];else $return .= $tokens[$start];
 		}
 	return $return;
@@ -1004,11 +1124,35 @@ class patcher
 			else $start++;
 		}
 	}
-	private function search_token($tokens,$start,$search,$breakon = array())
+	private function search_back($tokens,$start,$search,$breakon = array(),$jump_para = false)
+	{
+		$token_count = count($tokens);
+		while($start> 0) {
+			$token_name = $this->token_name($tokens[$start]);
+			if($token_name == ')' && $jump_para) {
+				$start = $this->get_pair($tokens,$start,-1)-1;
+				continue;
+			}
+			if($breakon && in_array($token_name,$breakon)) return false;
+			if(is_array($search)) {
+				if(in_array($token_name,$search)) return $start;
+
+			} else {
+				if($token_name == $search) return $start;
+			}
+			$start--;
+		}
+	}
+	private function search_token($tokens,$start,$search,$breakon = array(),$jump_para = false)
 	{
 		$token_count = count($tokens);
 		while($start< $token_count) {
 			$token_name = $this->token_name($tokens[$start]);
+			if($token_name == '(' && $jump_para) {
+				$start = $this->get_pair($tokens,$start,1);
+				$start++;
+				continue;
+			}
 			if($breakon && in_array($token_name,$breakon)) return false;
 			if(is_array($search)) {
 				if(in_array($token_name,$search)) return $start;
@@ -1097,6 +1241,7 @@ class patcher
 			return $start;
 		}
 	}
+
 	private function token_content($token)
 	{
 		if(is_array($token)) {
@@ -1131,6 +1276,10 @@ public function __construct($nodes=array())
 	{
 		if($nodes) $this->nodes = $nodes;
 	}
+public function nodes()
+{
+	return $this->nodes;
+}
 public function dumpNode($node,$path=array(),$highlightpaths=array())
 {
 	if(isset($this->nodes[$node])) {
@@ -1163,10 +1312,21 @@ public function addChildren($tree)
 			}
 		}
 	}
+public function addChildToAllDecendants($parent,$child,$exclude = array())
+{
+	while(1) {
+		$this->addChild($parent,$child);
+		if(isset($this->nodes[$parent][0])) $parent = $this->nodes[$parent][0]; else break;
+		if($parent == $child) break;
+	}
+}
+
 public function addChildToAllLeavesOfParent($parent,$child,$exclude = array())
 	{
 		foreach($this->getLeavesForTreeAt($parent,$exclude) as $leaf) {
-			if(!in_array($leaf,$exclude) && $leaf!=$child) $this->addChild($leaf,$child);
+			if(!in_array($leaf,$exclude) && $leaf!=$child) {
+			$this->addChild($leaf,$child);
+			}
 		}
 
 	}
