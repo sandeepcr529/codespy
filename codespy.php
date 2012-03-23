@@ -252,6 +252,7 @@ class analyzer
 	public static $coveredcolor = '#ffc2c2';
 	public function __destruct()
 	{
+		$coverages = array();
 		if(self::$outputformat == 'vim') {
 			foreach(self::$coveredlines as $file=>$lines) {
 				//echo PHP_EOL.$file,' :  ',join(',',array_keys($lines));
@@ -266,7 +267,7 @@ class analyzer
 			<!DOCTYPE html>
 			<style>
 			body{
-			font: 14px/1.428 "Lucida Grande","Lucida Sans Unicode",Lucida,Arial,Helvetica,sans-serif;
+			font: 14px/1 "Lucida Grande","Lucida Sans Unicode",Lucida,Arial,Helvetica,sans-serif;
 			}
 			table.index {
 			border-spacing:0px;
@@ -328,16 +329,16 @@ EOB;
 				//foreach(self::$executionbranches as $functionname=>$paths) {$output .=$functionname."<br/>"; foreach($paths as $path)  $output .= join(',',array_keys($path))."\n<br/>";}
 				foreach($file_lines as $k=>$line) 
 					if(isset($lines[$k+1]) && $lines[$k+1]>0) {
-						$output .= "<span  style='font-family:monospace;background-color:#a0ffa0'>".str_pad(($k+1).':'.$lines[$k+1],$maxlen,'0',STR_PAD_LEFT)."</span><pre style='font-family:monospace;display:inline;margin:0px;background-color:".self::$coveredcolor.";font-family:monospace'>".rtrim(preg_replace('/\(codespy-execution-node:([0-9.]+)\)/','<span style=\'color:red;font-weight:bold;font-size:22;padding:10px;\'>\1</span>', htmlentities($line)))."</pre><br/>";
+						$output .= "<span  style='font-family:monospace;background-color:#a0ffa0'>".str_pad(($k+1).':'.$lines[$k+1],$maxlen,'0',STR_PAD_LEFT)."</span><pre style='font-family:monospace;display:inline;margin:0px;background-color:".self::$coveredcolor.";font-family:monospace;padding-left:5px'>".rtrim(preg_replace('/\(codespy-execution-node:([0-9.]+)\)/','<span style=\'color:red;font-weight:bold;font-size:22;padding:10px;\'>\1</span>',"". htmlentities($line)))."</pre><br/>";
 						$covered_lines+=1;
 					} else
-						$output .=  "<span style='font-family:monospace;background-color:#a0ffa0'>".str_pad($k+1,$maxlen,'0',STR_PAD_LEFT)."</span><pre style='font-family:monospace;margin:0px;display:inline'>".rtrim(preg_replace('/\(codespy-execution-node:([0-9.]+)\)/','<span style=\'color:red;font-size:22;font-weight:bold\'>\1</span>',htmlentities($line)))."</pre><br/>";
+						$output .=  "<span style='font-family:monospace;background-color:#a0ffa0'>".str_pad($k+1,$maxlen,'0',STR_PAD_LEFT)."</span><pre style='font-family:monospace;margin:0px;display:inline;padding-left:10px'>".rtrim(preg_replace('/\(codespy-execution-node:([0-9.]+)\)/','<span style=\'color:red;font-size:22;font-weight:bold\'>\1</span>',"".htmlentities($line)))."</pre><br/>";
 				$coverage = ($covered_lines/count($file_lines))*100;
 				$actual_coverage = ($covered_lines*100/Analyzer::$executable_statements[$file]);
 				$coverages[$file] = $coverage;
 				$actual_coverages[$file] = $actual_coverage;
-				$output = "<b>~Line Coverage</b>=".$coverage."%<br/>".$output;
-				$output = "<b>~Statement Coverage</b>=".$actual_coverage."%<br/>".$output;
+				$output = "~Line Coverage=<b>".$coverage."%</b><br/><br/>".$output;
+				$output = "~Statement Coverage=<b>".$actual_coverage."%</b>,&nbsp;&nbsp;".$output;
 				if(self::$outputdir) {
 					file_put_contents(self::$outputdir."/".($visual_report_file[$file] = preg_replace("/[:\\/\\\]/",'-',$file).".cc.html"),$style.$output);
 				}
@@ -345,7 +346,7 @@ EOB;
 			ob_start();
 			echo "$style<table class='index'><tr><th>File Name</th><th>Line Coverage</th><th>~Statement Coverage</th><th>View Report</th></tr>";
 			$rc=0;
-			foreach($coverages as $file=>$coverage) {
+			foreach((array)$coverages as $file=>$coverage) {
 				$coverage = number_format($coverage,2);
 				echo "<tr ".(($rc++%2==1)?"class='odd'":"")."><td>$file</td><td>$coverage %</td><td>{$actual_coverages[$file]} %</td><td><a href='{$visual_report_file[$file]}'>View Coverage</a></td></tr>";
 			}
@@ -387,7 +388,7 @@ EOB;
 	}
 	public static function addFileToSpy($path)
 	{
-		array_push(self::$file_to_cover,$path);
+		array_push(self::$file_to_cover,realpath($path));
 	}
 
 	static function trace($lines,$file)
