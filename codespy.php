@@ -1,5 +1,5 @@
 <?php
-// Codespy PHP code coverage analyzing tool version 2.0
+// Codespy PHP code coverage analyzing tool version 2.5
 namespace codespy;
 /*
 
@@ -250,9 +250,39 @@ class analyzer
 	public static $file_to_cover=array();
 	public static $functions_to_analayze = array();
 	public static $coveredcolor = '#ffc2c2';
+	private function token_content($token)
+	{
+		if(is_array($token)) {
+			if(isset($token[0])) {
+				return $token[1];
+				}
+			else 
+				return false;
+			} else {
+				return $token;
+			}
+	}
+	public function wrap_section($line,$from)
+	{
+		$tokens = token_get_all("<?php $line");
+		$sf =0;
+		$return = '';
+		if(in_array(1,$from)) $return = "<pre style='font-family:monospace;display:inline;margin:0px;background-color:".self::$coveredcolor.";font-family:monospace'>";
+		else $return =  "<pre style='font-family:monospace;display:inline;margin:0px;font-family:monospace'>";
+		foreach($tokens as $k=>$t) {
+			if($k==0) continue;
+			$return .= $this->token_content($t);
+			if($t == ';') {
+				$sf++;
+				$return .= "</pre>";
+				if(in_array($sf+1,$from)) $return .= "<pre style='font-family:monospace;display:inline;margin:0px;background-color:".self::$coveredcolor.";font-family:monospace'>";
+				else $return.="<pre style='font-family:monospace;display:inline;margin:0px;'>";
+			}
+		}
+		return  $return;
+	}
 	public function __destruct()
 	{
-		$coverages = array();
 		if(self::$outputformat == 'vim') {
 			foreach(self::$coveredlines as $file=>$lines) {
 				//echo PHP_EOL.$file,' :  ',join(',',array_keys($lines));
@@ -322,23 +352,25 @@ EOB;
 					}
 				} else {
 				$file_lines = file($file);
-				$maxlen = strlen(count($file_lines).max(self::$coveredlines[$file])) +1;
+				$maxlen = strlen(count($file_lines)) +1;
 				$covered_lines=0;
 				$output = '';
 				}
 				//foreach(self::$executionbranches as $functionname=>$paths) {$output .=$functionname."<br/>"; foreach($paths as $path)  $output .= join(',',array_keys($path))."\n<br/>";}
 				foreach($file_lines as $k=>$line) 
-					if(isset($lines[$k+1]) && $lines[$k+1]>0) {
-						$output .= "<span  style='font-family:monospace;background-color:#a0ffa0'>".str_pad(($k+1).':'.$lines[$k+1],$maxlen,'0',STR_PAD_LEFT)."</span><pre style='font-family:monospace;display:inline;margin:0px;background-color:".self::$coveredcolor.";font-family:monospace;padding-left:5px'>".rtrim(preg_replace('/\(codespy-execution-node:([0-9.]+)\)/','<span style=\'color:red;font-weight:bold;font-size:22;padding:10px;\'>\1</span>',"". htmlentities($line)))."</pre><br/>";
-						$covered_lines+=1;
+					if(isset($lines[$k+1])) {
+					//	$output .= "<span  style='font-family:monospace;background-color:#a0ffa0'>".str_pad(($k+1).':'.join(',',array_keys($lines[$k+1])),$maxlen,'0',STR_PAD_LEFT)."</span><pre style='font-family:monospace;display:inline;margin:0px;background-color:".self::$coveredcolor.";font-family:monospace'>".rtrim(preg_replace('/\(codespy-execution-node:([0-9.]+)\)/','<span style=\'color:red;font-weight:bold;font-size:22;padding:10px;\'>\1</span>',$this->wrap_section($line,array_keys[$k+1])))."</pre><br/>";
+						$output .= "<span  style='font-family:monospace;background-color:#a0ffa0'>".str_pad(($k+1)/*.':'.join(',',array_keys($lines[$k+1]))*/,$maxlen,'0',STR_PAD_LEFT)."</span>".rtrim($this->wrap_section($line,array_keys($lines[$k+1])))."<br/>";
+						$covered_lines+=count($lines[$k+1]);
 					} else
-						$output .=  "<span style='font-family:monospace;background-color:#a0ffa0'>".str_pad($k+1,$maxlen,'0',STR_PAD_LEFT)."</span><pre style='font-family:monospace;margin:0px;display:inline;padding-left:10px'>".rtrim(preg_replace('/\(codespy-execution-node:([0-9.]+)\)/','<span style=\'color:red;font-size:22;font-weight:bold\'>\1</span>',"".htmlentities($line)))."</pre><br/>";
+					//	$output .=  "<span style='font-family:monospace;background-color:#a0ffa0'>".str_pad($k+1,$maxlen,'0',STR_PAD_LEFT)."</span><pre style='font-family:monospace;margin:0px;display:inline'>".rtrim(preg_replace('/\(codespy-execution-node:([0-9.]+)\)/','<span style=\'color:red;font-size:22;font-weight:bold\'>\1</span>',htmlentities($line)))."</pre><br/>";
+						$output .=  "<span style='font-family:monospace;background-color:#a0ffa0'>".str_pad($k+1,$maxlen,'0',STR_PAD_LEFT)."</span><pre style='font-family:monospace;margin:0px;display:inline'>".rtrim(htmlentities($line))."</pre><br/>";
 				$coverage = ($covered_lines/count($file_lines))*100;
 				$actual_coverage = ($covered_lines*100/Analyzer::$executable_statements[$file]);
 				$coverages[$file] = $coverage;
 				$actual_coverages[$file] = $actual_coverage;
-				$output = "~Line Coverage=<b>".$coverage."%</b><br/><br/>".$output;
-				$output = "~Statement Coverage=<b>".$actual_coverage."%</b>,&nbsp;&nbsp;".$output;
+				$output = "<b>~Line Coverage</b>=".number_format($coverage,2)."%<br/>".$output;
+				$output = "<b>~Statement Coverage</b>=".number_format($actual_coverage,2)."%<br/>".$output;
 				if(self::$outputdir) {
 					file_put_contents(self::$outputdir."/".($visual_report_file[$file] = preg_replace("/[:\\/\\\]/",'-',$file).".cc.html"),$style.$output);
 				}
@@ -346,7 +378,7 @@ EOB;
 			ob_start();
 			echo "$style<table class='index'><tr><th>File Name</th><th>Line Coverage</th><th>~Statement Coverage</th><th>View Report</th></tr>";
 			$rc=0;
-			foreach((array)$coverages as $file=>$coverage) {
+			foreach($coverages as $file=>$coverage) {
 				$coverage = number_format($coverage,2);
 				echo "<tr ".(($rc++%2==1)?"class='odd'":"")."><td>$file</td><td>$coverage %</td><td>{$actual_coverages[$file]} %</td><td><a href='{$visual_report_file[$file]}'>View Coverage</a></td></tr>";
 			}
@@ -388,7 +420,7 @@ EOB;
 	}
 	public static function addFileToSpy($path)
 	{
-		array_push(self::$file_to_cover,realpath($path));
+		array_push(self::$file_to_cover,$path);
 	}
 
 	static function trace($lines,$file)
@@ -408,7 +440,6 @@ EOB;
 	static function load($source,$path,$lc)
 	{
 		if((in_array($path,self::$file_to_cover) === false) && count(self::$file_to_cover)>0) return $source;
-		self::$coveredlines[$path] = array_fill(1,$lc,0);
 	 	$patcher = new patcher($source);
 		if(count(self::$functions_to_analayze)>0)
 			return $patcher->patch(array(1,2,3,4,5),$path);
@@ -553,6 +584,22 @@ class patcher
 		}
 		return $out;
 	}
+	public function get_line_pos($tokens,$tp)
+	{
+		$charecter_pos = 0;
+		do{
+			$token_name = $this->token_name($tokens[$tp]);
+			if($token_name == 'T_WHITESPACE' && (ord($tokens[$tp][1])==13 ||  ord($tokens[$tp][1])==10)  ) {
+				return $charecter_pos;
+			} elseif($token_name == ';') {
+				$charecter_pos++;
+				$tp--;
+			} else {
+				$tp--;
+			}
+
+		}while(1);
+	}
 	//replace else if with elseif
 	public function pass_1()
 	{
@@ -664,6 +711,7 @@ class patcher
 		$suspend = true;
 		$inclass = false;
 		$executable_statements = 0;
+		$charecter_pos = 0;
 		while($tp < $token_count) {
 			$token_name = $this->token_name($tokens[$tp]);
 			if(in_array($token_name, $tokens_to_patch )) {
@@ -701,15 +749,23 @@ class patcher
 				} elseif($token_name =='T_END_HEREDOC') {
 					if($this->token_name($tokens[$temp = $this->get_next_non_comment($tokens,$tp+1)]) == ';') {
 						$offset++;
-						$this->add_tokens_to_be_inserted_after($temp+1,PHP_EOL.'\codespy\Analyzer::$coveredlines[__FILE__][__LINE__-'.$offset.']+=1;');
+						$charecter_pos = $this->get_line_pos($tokens,$tp);
+						$this->add_tokens_to_be_inserted_after($temp+1,PHP_EOL.'\codespy\Analyzer::$coveredlines[__FILE__][__LINE__-'.$offset.']['.$charecter_pos.']=1;');
 						$tp = $temp+1;
 					}
 
 				} elseif($token_name == ';') {
+					$charecter_pos = $this->get_line_pos($tokens,$tp);
 					$executable_statements++;
-					$this->add_tokens_to_be_inserted_after($tp+1,'\codespy\Analyzer::$coveredlines[__FILE__][__LINE__-'.$offset.']+=1;');
+					$this->add_tokens_to_be_inserted_after($tp+1,'\codespy\Analyzer::$coveredlines[__FILE__][__LINE__-'.$offset.']['.$charecter_pos.']=1;');
 				} elseif($token_name == 'T_RETURN' || $token_name == 'T_THROW' || $token_name == 'T_BREAK' || $token_name == 'T_CONTINUE') {
-					$this->add_tokens_to_be_inserted_after($tp,'\codespy\Analyzer::$coveredlines[__FILE__][__LINE__-'.$offset.']+=1;');
+					$charecter_pos = $this->get_line_pos($tokens,$tp);
+					$this->add_tokens_to_be_inserted_after($tp,'\codespy\Analyzer::$coveredlines[__FILE__][__LINE__-'.$offset.']['.($charecter_pos+1).']=1;');
+
+				} elseif($token_name == 'T_WHITESPACE') {
+					//var_dump(ord($tokens[$tp][1]));
+					//var_dump(ord("\r"));
+					if(ord($tokens[$tp][1]) == 13) $charecter_pos = 0;
 
 				}
 			$tp++;

@@ -1,6 +1,12 @@
-## Codespy 2.0: A code /path coverage analyzing tool in pure php. 
+## Codespy 2.5: A code /path coverage analyzing tool in pure php. 
 
-New in this version
+New in this version 2.5
+
+* More accurate statement coverage. Now tracks the execution of multiple statements in a single line. 
+
+![Screenshot](http://i40.tinypic.com/16rsl4.jpg)
+
+New in this version 2.0
 
 * Rewrote the patcher from scratch to organize its operation as a series of passes. This makes fixing any bugs and adding / modifying the functionality a lot easier and faster.
 * Added Executable Statement Coverage for more accurate code coverage measurement.
@@ -35,12 +41,13 @@ Supported output formats, html, vim, php and text
 
 An index.html file will be generated with a summary of code coverage and statement coverage of all files and links 
 to the coverage view of each files.
+
 ![Screenshot](http://i42.tinypic.com/bhkbc1.jpg)
 The view coverage link takes you to an html page where you can see the coverage report for each file.
 
-This html file will contain the source code with executed lines highlighted. 
-The number of times a line of code was executed will be displayed beside the line number. See the screenshot below.
-![Screenshot](http://i44.tinypic.com/4k76lx.png)
+This html file will contain the source code with executed lines highlighted. See the screenshot below.
+
+![Screenshot](http://i40.tinypic.com/16rsl4.jpg)
 
 File extension .cc.html will be appended to filenames when writing into output directory.
 
@@ -105,7 +112,7 @@ By restricting analysis to a single file or a small number of files, the test ca
 For testing, you can just download all the three files in to a directory, change the output dir in the test.php  and just run it to see its working. The html files should be written to the set output directory. Just open the file in browser to see code coverage.
 
 
-**How to do path coverage analysis:**
+**How to do path coverage analysis:[ Experimental ]**
 
 Warning : Path coverage still is in developmen.
 
@@ -154,6 +161,7 @@ to some script writable directory in your system.
 * Open the file sampleclass.php.cc.html which will be written to your output directory in your browser to see the output as shown in the images above.
 
 * Edit the file sampleclass.php to change the code and see the change reflected in the generated output.
+
 
 
 
