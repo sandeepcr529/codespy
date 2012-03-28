@@ -282,12 +282,12 @@ class analyzer
 		foreach($tokens as $k=>$t) {
 			if($k==0) continue;
 			$foundsc = false;
-			for($lh=$k;$lh<$token_length;$lh++) {
-				if($tokens[$lh] == ';') $foundsc = true;
-				}
 			if($semicolon_ended) {
-				if(isset($from[$sf-1])) {
-					$title = join(', ',array_unique($from[$sf-1]));
+				if(isset($from[$sf+1]) ) {
+				for($lh=$k;$lh<=$token_length;$lh++) {
+					if($tokens[$lh] == ';') $foundsc = true;
+					}
+					$title = join(', ',array_unique($from[$sf+1]));
 					if($foundsc) $return .= "<pre  title='$title' style='font-family:monospace;display:inline;margin:0px;background-color:".self::$coveredcolor.";font-family:monospace'>";
 				} elseif($foundsc) $return.="<pre style='font-family:monospace;display:inline;margin:0px;dummy:56'>";
 				$semicolon_ended = false;
@@ -817,7 +817,7 @@ class patcher
 					$charecter_pos = $this->get_line_pos($tokens,$tp);
 					$executable_statements++;
 					$this->add_tokens_to_be_inserted_after($tp+1,'\codespy\Analyzer::$coveredlines[__FILE__][__LINE__-'.$offset.']['.$charecter_pos.'][]=\codespy\Analyzer::$currenttest;');
-				} elseif($token_name == 'T_RETURN' || $token_name == 'T_THROW' || $token_name == 'T_BREAK' || $token_name == 'T_CONTINUE') {
+				} elseif($token_name == 'T_GOTO' || $token_name == 'T_RETURN' || $token_name == 'T_THROW' || $token_name == 'T_BREAK' || $token_name == 'T_CONTINUE') {
 					$charecter_pos = $this->get_line_pos($tokens,$tp);
 					$this->add_tokens_to_be_inserted_after($tp,'\codespy\Analyzer::$coveredlines[__FILE__][__LINE__-'.$offset.']['.($charecter_pos+1).'][]=\codespy\Analyzer::$currenttest;');
 
