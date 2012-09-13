@@ -769,11 +769,8 @@ class patcher
 			} elseif($token_name == 'T_CASE' || $token_name == 'T_DEFAULT') {
 				//jump over the ternary operators to get the last colon
 				if($this->search_token($tokens,$tp,'?',array(';',':'))) {
-				echo $tp,"\n";
 				while($tmp = $this->search_token($tokens,$tp,'?',array(';',':'))) $tp = $tmp+1;
-				echo $tp,"\n";
 				while($tmp =  $this->search_token($tokens,$tp,':',array(';')))  $tp = $tmp+1;
-				echo $tp,"\n";
 				}
 				if($temp =  $this->search_token($tokens,$tp,':',array(';'))) {
 					$this->add_tokens_to_be_replaced($temp ,';');

@@ -10,8 +10,6 @@ include 'codespy.php';
 // syntax:
 // addFunctionToAnalyze('file_path','method or function name','class name/leave blank for adding functions');
 
-\codespy\Analyzer::addFunctionToAnalyze('sampleclass.php','factorial','sample_object');
-\codespy\Analyzer::addFunctionToAnalyze('sampleclass.php','function_with_branches','sample_object');
 
 // Now the files containing actual code to be analyzed
 include 'sampleclass.php';
