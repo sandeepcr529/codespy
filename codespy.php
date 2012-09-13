@@ -772,7 +772,7 @@ class patcher
 				echo $tp,"\n";
 				while($tmp = $this->search_token($tokens,$tp,'?',array(';',':'))) $tp = $tmp+1;
 				echo $tp,"\n";
-				if($tmp =  $this->search_token($tokens,$tp,':',array(';')))  $tp = $tmp+1;
+				while($tmp =  $this->search_token($tokens,$tp,':',array(';')))  $tp = $tmp+1;
 				echo $tp,"\n";
 				}
 				if($temp =  $this->search_token($tokens,$tp,':',array(';'))) {
